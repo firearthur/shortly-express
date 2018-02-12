@@ -2,7 +2,8 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-
+var session = require('express-session');
+var bcrypt = require('bcrypt');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -21,9 +22,64 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+// app.use(session());
+
+
+app.set('trust proxy', 1) // trust first proxy
+app.use(session({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: true }
+}))
 
 
 app.get('/', 
+function(req, res) {
+//   var cought = db.knex('users').where({
+//   username: 'test',
+//   password:  'superman'
+// }).select('id');
+  // console.log('this should be the url',cought); 
+  if (req.session.user) {
+    res.render('index');
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
+  }
+});
+
+app.get('/login', 
+function(req, res) {
+  db.knex('users').insert({username: 'test', password: 'superman'});
+  res.render('login');
+});
+
+app.post('/login', function(req, res) {
+    
+    var username = req.body.username;
+    var password = req.body.password;
+    var salt = bcrypt.genSaltSync(10);
+    var hash = bcrypt.hashSync(password, salt);
+    var userObj = db.knex('users').where({ 
+      username: username, 
+      password: hash });
+    console.log(userObj);
+    if(userObj){
+        // req.session.regenerate(function(){
+        //     req.session.user = username;
+        console.log('I made it to the res');
+            res.redirect('index');
+        // });
+        console.log('This shouldnt print');
+    }
+    else {
+        res.redirect('login');
+    }
+ 
+});
+
+app.get('/index', 
 function(req, res) {
   res.render('index');
 });
