@@ -25,13 +25,12 @@ app.use(express.static(__dirname + '/public'));
 // app.use(session());
 
 
-app.set('trust proxy', 1) // trust first proxy
+// app.set('trust proxy', 1) // trust first proxy
 app.use(session({
   secret: 'keyboard cat',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: true }
-}))
+}));
 
 
 app.get('/',
@@ -42,24 +41,10 @@ app.get('/',
       req.session.error = 'Access denied!';
       res.redirect('/login');
     }
-
   });
 
 app.get('/login',
   function (req, res) {
-
-    // var salt = bcrypt.genSaltSync(10);
-    // var hash = bcrypt.hashSync('superman', salt);    
-    // // console.log('hash in the creation', hash);
-    // Users.create({ //creating a dummy user for the sake of test
-    //   username: 'test',
-    //   password: hash,
-    // })
-    //   .then(function (newUser) {
-    //     // res.status(200).send(newUser);
-    //   });
-
-
     res.render('login');
   });
 
@@ -67,25 +52,25 @@ app.post('/login', function (req, res) {
 
   var username = req.body.username;
   var password = req.body.password;
-  console.log('password', password)
-  // var salt = bcrypt.genSaltSync(10);
-  // var hash = bcrypt.hashSync('superman', salt);
-  // console.log('hash again', hash);
+
   db.knex('users').where({
     username: username
   }).select('password').then(function (data, err) {
-    if (err) {
-      console.log('err', err);
-    } else {
-      if (data.length) { // if the username was found in the database redirect to index
+    bcrypt.compare(password, data[0].password, function (errr, success) {
+      console.log('ress', success);
+      if (success) { // if the password is right we get a true as a success
         req.session.user = username;
-        console.log('data', data);
-        res.redirect('/index');
-      }
-      else {
+        req.session.save((err3) => { //after saving the user on the session redirect to index and let user view links
+          if (!err3) {
+            console.log('in !err block');
+            res.redirect('/');
+          }
+        });
+      } else {
+        console.log('wrong password');
         res.redirect('/login');
       }
-    }
+    });
   });
 });
 
@@ -150,14 +135,11 @@ app.get('/signup',
 app.post('/signup', function (req, res) {
   var username = req.body.username;
   var password = req.body.password;
-  // console.log('password', password)
-  // var salt = bcrypt.genSaltSync(10);
-  // var hash = bcrypt.hashSync('superman', salt);
-  util.createUser(username, password, function(error, data) {
+  util.createUser(username, password, function (error, data) {
     if (error) {
       console.log(error);
     } else {
-      console.log('this werked', data);
+      res.redirect('/links');
     }
   })
 
