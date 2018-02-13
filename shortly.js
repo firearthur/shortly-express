@@ -141,7 +141,7 @@ app.post('/signup', function (req, res) {
     } else {
       res.redirect('/links');
     }
-  })
+  });
 
 });
 
