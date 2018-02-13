@@ -22,10 +22,7 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
-// app.use(session());
 
-
-// app.set('trust proxy', 1) // trust first proxy
 app.use(session({
   secret: 'keyboard cat',
   resave: false,
@@ -79,7 +76,12 @@ app.post('/login', function (req, res) {
 
 app.get('/index',
   function (req, res) {
-    res.render('index');
+    if (req.session.user) {
+      res.render('index');
+    } else {
+      req.session.error = 'Access denied!';
+      res.redirect('/login');
+    }
   });
 
 app.get('/create',
@@ -139,11 +141,21 @@ app.post('/signup', function (req, res) {
     if (error) {
       console.log(error);
     } else {
-      res.redirect('/links');
+      req.session.user = username;
+      res.redirect('/');
     }
   });
 
 });
+
+app.get('/logout',
+  function (req, res) {
+    req.session.destroy(function(err){
+      if(err) throw err;
+      console.log('logged out');
+      res.redirect('/login');
+    })
+  });
 
 /************************************************************/
 // Write your authentication routes here
