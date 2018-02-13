@@ -102,11 +102,6 @@ app.get('/create',
     res.render('index');
   });
 
-app.get('/signup',
-  function (req, res) {
-    res.render('signup');
-  });
-
 app.get('/links',
   function (req, res) {
     Links.reset().fetch().then(function (links) {
@@ -145,6 +140,28 @@ app.post('/links',
       }
     });
   });
+
+
+app.get('/signup',
+  function (req, res) {
+    res.render('signup');
+  });
+
+app.post('/signup', function (req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  // console.log('password', password)
+  // var salt = bcrypt.genSaltSync(10);
+  // var hash = bcrypt.hashSync('superman', salt);
+  util.createUser(username, password, function(error, data) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('this werked', data);
+    }
+  })
+
+});
 
 /************************************************************/
 // Write your authentication routes here
