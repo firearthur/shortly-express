@@ -34,99 +34,117 @@ app.use(session({
 }))
 
 
-app.get('/', 
-function(req, res) {
-//   var cought = db.knex('users').where({
-//   username: 'test',
-//   password:  'superman'
-// }).select('id');
-  // console.log('this should be the url',cought); 
-  if (req.session.user) {
-    res.render('index');
-  } else {
-    req.session.error = 'Access denied!';
-    res.redirect('/login');
-  }
-});
-
-app.get('/login', 
-function(req, res) {
-  db.knex('users').insert({username: 'test', password: 'superman'});
-  res.render('login');
-});
-
-app.post('/login', function(req, res) {
-    
-    var username = req.body.username;
-    var password = req.body.password;
-    var salt = bcrypt.genSaltSync(10);
-    var hash = bcrypt.hashSync(password, salt);
-    var userObj = db.knex('users').where({ 
-      username: username, 
-      password: hash });
-    console.log(userObj);
-    if(userObj){
-        // req.session.regenerate(function(){
-        //     req.session.user = username;
-        console.log('I made it to the res');
-            res.redirect('index');
-        // });
-        console.log('This shouldnt print');
-    }
-    else {
-        res.redirect('login');
-    }
- 
-});
-
-app.get('/index', 
-function(req, res) {
-  res.render('index');
-});
-
-app.get('/create', 
-function(req, res) {
-  res.render('index');
-});
-
-app.get('/links', 
-function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.status(200).send(links.models);
-  });
-});
-
-app.post('/links', 
-function(req, res) {
-  var uri = req.body.url;
-
-  if (!util.isValidUrl(uri)) {
-    console.log('Not a valid url: ', uri);
-    return res.sendStatus(404);
-  }
-
-  new Link({ url: uri }).fetch().then(function(found) {
-    if (found) {
-      res.status(200).send(found.attributes);
+app.get('/',
+  function (req, res) {
+    if (req.session.user) {
+      res.render('index');
     } else {
-      util.getUrlTitle(uri, function(err, title) {
-        if (err) {
-          console.log('Error reading URL heading: ', err);
-          return res.sendStatus(404);
-        }
+      req.session.error = 'Access denied!';
+      res.redirect('/login');
+    }
 
-        Links.create({
-          url: uri,
-          title: title,
-          baseUrl: req.headers.origin
-        })
-        .then(function(newLink) {
-          res.status(200).send(newLink);
-        });
-      });
+  });
+
+app.get('/login',
+  function (req, res) {
+
+    // var salt = bcrypt.genSaltSync(10);
+    // var hash = bcrypt.hashSync('superman', salt);    
+    // // console.log('hash in the creation', hash);
+    // Users.create({ //creating a dummy user for the sake of test
+    //   username: 'test',
+    //   password: hash,
+    // })
+    //   .then(function (newUser) {
+    //     // res.status(200).send(newUser);
+    //   });
+
+
+    res.render('login');
+  });
+
+app.post('/login', function (req, res) {
+
+  var username = req.body.username;
+  var password = req.body.password;
+  console.log('password', password)
+  // var salt = bcrypt.genSaltSync(10);
+  // var hash = bcrypt.hashSync('superman', salt);
+  // console.log('hash again', hash);
+  db.knex('users').where({
+    username: username
+  }).select('password').then(function (data, err) {
+    if (err) {
+      console.log('err', err);
+    } else {
+      if (data.length) { // if the username was found in the database redirect to index
+        req.session.user = username;
+        console.log('data', data);
+        res.redirect('/index');
+      }
+      else {
+        res.redirect('/login');
+      }
     }
   });
 });
+
+
+
+
+app.get('/index',
+  function (req, res) {
+    res.render('index');
+  });
+
+app.get('/create',
+  function (req, res) {
+    res.render('index');
+  });
+
+app.get('/signup',
+  function (req, res) {
+    res.render('signup');
+  });
+
+app.get('/links',
+  function (req, res) {
+    Links.reset().fetch().then(function (links) {
+      res.status(200).send(links.models);
+    });
+  });
+
+app.post('/links',
+  function (req, res) {
+    var uri = req.body.url;
+
+    if (!util.isValidUrl(uri)) {
+      console.log('Not a valid url: ', uri);
+      return res.sendStatus(404);
+    }
+
+    new Link({ url: uri }).fetch().then(function (found) {
+      if (found) {
+        res.status(200).send(found.attributes);
+      } else {
+        util.getUrlTitle(uri, function (err, title) {
+          if (err) {
+            console.log('Error reading URL heading: ', err);
+            return res.sendStatus(404);
+          }
+
+          Links.create({
+            url: uri,
+            title: title,
+            baseUrl: req.headers.origin
+          })
+            .then(function (newLink) {
+              res.status(200).send(newLink);
+            });
+        });
+      }
+    });
+  });
 
 /************************************************************/
 // Write your authentication routes here
@@ -140,8 +158,8 @@ function(req, res) {
 // If the short-code doesn't exist, send the user to '/'
 /************************************************************/
 
-app.get('/*', function(req, res) {
-  new Link({ code: req.params[0] }).fetch().then(function(link) {
+app.get('/*', function (req, res) {
+  new Link({ code: req.params[0] }).fetch().then(function (link) {
     if (!link) {
       res.redirect('/');
     } else {
@@ -149,9 +167,9 @@ app.get('/*', function(req, res) {
         linkId: link.get('id')
       });
 
-      click.save().then(function() {
+      click.save().then(function () {
         link.set('visits', link.get('visits') + 1);
-        link.save().then(function() {
+        link.save().then(function () {
           return res.redirect(link.get('url'));
         });
       });
