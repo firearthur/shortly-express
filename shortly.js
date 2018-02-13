@@ -86,14 +86,25 @@ app.get('/index',
 
 app.get('/create',
   function (req, res) {
-    res.render('index');
+    if (req.session.user) {
+      res.render('index');
+    } else {
+      req.session.error = 'Access denied!';
+      res.redirect('/login');
+    }
+    // res.render('index');
   });
 
 app.get('/links',
   function (req, res) {
-    Links.reset().fetch().then(function (links) {
-      res.status(200).send(links.models);
-    });
+    if (req.session.user) {
+      Links.reset().fetch().then(function (links) {
+        res.status(200).send(links.models);
+      });
+    } else {
+      req.session.error = 'Access denied!';
+      res.redirect('/login');
+    }
   });
 
 app.post('/links',
@@ -150,7 +161,7 @@ app.post('/signup', function (req, res) {
 
 app.get('/logout',
   function (req, res) {
-    req.session.destroy(function(err) {
+    req.session.destroy(function (err) {
       if (err) { throw err; }
       console.log('logged out');
       res.redirect('/login');
